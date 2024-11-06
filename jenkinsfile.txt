@@ -1,0 +1,60 @@
+groovy
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_USER = credentials('dockerHubUsername')
+        DOCKER_HUB_PASS = credentials('dockerHubPassword')
+        AWS_KEY = credentials('awsAccessKey')
+        AWS_SECRET = credentials('awsSecretKey')
+    }
+    parameters {
+        choice(name: 'ENV', choices: ['UAT', 'PROD'], description: 'Select Deployment Environment')
+    }
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/yourusername/dotnet-hello-world'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t yourusername/dotnet-hello-world:${BUILD_NUMBER} .'
+                }
+            }
+        }
+        stage('Push Image to Docker Hub') {
+            steps {
+                script {
+                    sh '''
+                    echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin
+                    docker push yourusername/dotnet-hello-world:${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
+        stage('Deploy to AWS EC2') {
+            steps {
+                script {
+                    def envIP = params.ENV == 'UAT' ? 'UAT_IP' : 'PROD_IP'
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@${envIP} <<EOF
+                    docker pull yourusername/dotnet-hello-world:${BUILD_NUMBER}
+                    docker stop dotnet_app || true
+                    docker rm dotnet_app || true
+                    docker run -d -p 80:80 --name dotnet_app yourusername/dotnet-hello-world:${BUILD_NUMBER}
+                    EOF
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'Deployment failed!'
+        }
+    }
+}
