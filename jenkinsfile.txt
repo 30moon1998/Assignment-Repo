@@ -13,13 +13,13 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/yourusername/dotnet-hello-world'
+                git 'https://github.com/username/dotnet-hello-world'
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t yourusername/dotnet-hello-world:${BUILD_NUMBER} .'
+                    sh 'docker build -t username/dotnet-hello-world:${BUILD_NUMBER} .'
                 }
             }
         }
@@ -28,7 +28,7 @@ pipeline {
                 script {
                     sh '''
                     echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin
-                    docker push yourusername/dotnet-hello-world:${BUILD_NUMBER}
+                    docker push username/dotnet-hello-world:${BUILD_NUMBER}
                     '''
                 }
             }
@@ -39,10 +39,10 @@ pipeline {
                     def envIP = params.ENV == 'UAT' ? 'UAT_IP' : 'PROD_IP'
                     sh '''
                     ssh -o StrictHostKeyChecking=no ec2-user@${envIP} <<EOF
-                    docker pull yourusername/dotnet-hello-world:${BUILD_NUMBER}
+                    docker pull username/dotnet-hello-world:${BUILD_NUMBER}
                     docker stop dotnet_app || true
                     docker rm dotnet_app || true
-                    docker run -d -p 80:80 --name dotnet_app yourusername/dotnet-hello-world:${BUILD_NUMBER}
+                    docker run -d -p 80:80 --name dotnet_app username/dotnet-hello-world:${BUILD_NUMBER}
                     EOF
                     '''
                 }
