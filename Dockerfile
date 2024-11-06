@@ -15,7 +15,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
 COPY --from=build-env /app/out .
 
-# Expose the port your app listens on (e.g., 80)
+# Expose the port app listens on (e.g., 80)
 EXPOSE 80
 
 # Run the application
